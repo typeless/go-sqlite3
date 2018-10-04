@@ -434,6 +434,7 @@ func (ai *aggInfo) Done(ctx *C.sqlite3_context) {
 
 // Commit transaction.
 func (tx *SQLiteTx) Commit() error {
+	fmt.Printf("Commit\n")
 	_, err := tx.c.exec(context.Background(), "COMMIT", nil)
 	if err != nil && err.(Error).Code == C.SQLITE_BUSY {
 		// sqlite3 will leave the transaction open in this scenario.
@@ -446,6 +447,7 @@ func (tx *SQLiteTx) Commit() error {
 
 // Rollback transaction.
 func (tx *SQLiteTx) Rollback() error {
+	fmt.Printf("Rollback\n")
 	_, err := tx.c.exec(context.Background(), "ROLLBACK", nil)
 	return err
 }
@@ -857,6 +859,7 @@ func (c *SQLiteConn) query(ctx context.Context, query string, args []namedValue)
 
 // Begin transaction.
 func (c *SQLiteConn) Begin() (driver.Tx, error) {
+	fmt.Printf("Begin\n")
 	return c.begin(context.Background())
 }
 
@@ -975,6 +978,8 @@ func errorString(err Error) string {
 //
 //
 func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
+	fmt.Println("SQLiteDriver.Open")
+	debug.PrintStack()
 	if C.sqlite3_threadsafe() == 0 {
 		return nil, errors.New("sqlite library was not compiled for thread-safe operation")
 	}

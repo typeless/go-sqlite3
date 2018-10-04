@@ -6,12 +6,40 @@
 #ifdef SQLITE_ENABLE_UNLOCK_NOTIFY
 #include <sqlite3-binding.h>
 
-extern int unlock_notify_wait(sqlite3 *db);
-extern void unlock_notify_callback(void *, int);
+extern int unlock_notify_chan_open(void);
+extern void unlock_notify_chan_close(int);
+extern void unlock_notify_chan_poll(int);
 
-void _unlock_notify_callback(void *arg, int argc)
+static void
+unlock_notify_callback(void **argv, int narg)
 {
-  unlock_notify_callback(arg, argc);
+  int i;
+  int *arg;
+  unsigned h;
+
+  for (i = 0; i < narg; i++) {
+    arg = argv[i];
+    h = (unsigned)arg[0];
+    unlock_notify_chan_close(h);
+  }
+}
+
+static int
+unlock_notify_wait(sqlite3 *db)
+{
+  int rv;
+  unsigned argv[1] = {0};
+  unsigned h;
+
+  h = unlock_notify_chan_open();
+  argv[0] = h;
+
+  rv = sqlite3_unlock_notify(db, unlock_notify_callback, (void *)argv);
+  if (rv != SQLITE_OK) {
+    return rv;
+  }
+  unlock_notify_chan_poll(h);
+  return SQLITE_OK;
 }
 
 int
@@ -61,8 +89,10 @@ _sqlite3_step_blocking(sqlite3_stmt* stmt, long long* rowid, long long* changes)
     sqlite3_reset(stmt);
   }
 
-  *rowid = (long long) sqlite3_last_insert_rowid(db);
-  *changes = (long long) sqlite3_changes(db);
+  if (rv == SQLITE_OK) {
+    *rowid = (long long) sqlite3_last_insert_rowid(db);
+    *changes = (long long) sqlite3_changes(db);
+  }
   return rv;
 }
 

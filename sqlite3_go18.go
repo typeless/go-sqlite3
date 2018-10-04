@@ -11,6 +11,8 @@ package sqlite3
 import (
 	"database/sql/driver"
 	"errors"
+	"fmt"
+	"runtime/debug"
 
 	"context"
 )
@@ -48,6 +50,8 @@ func (c *SQLiteConn) PrepareContext(ctx context.Context, query string) (driver.S
 
 // BeginTx implement ConnBeginTx.
 func (c *SQLiteConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
+	fmt.Printf("BeginTx\n")
+	debug.PrintStack()
 	return c.begin(ctx)
 }
 
